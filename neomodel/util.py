@@ -3,7 +3,7 @@ import os
 import sys
 import time
 import warnings
-import neomodel.core as core
+from neomodel import core
 from threading import local
 
 from neo4j import GraphDatabase, basic_auth, CypherError, SessionError
