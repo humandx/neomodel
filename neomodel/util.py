@@ -6,8 +6,9 @@ import warnings
 from neomodel import core
 from threading import local
 
-from neo4j import GraphDatabase, basic_auth, CypherError, SessionError
-from neo4j.types.graph import Node
+from neo4j import GraphDatabase, basic_auth
+from neo4j.exceptions import Neo4jError, SessionExpired
+from neo4j.graph import Node
 
 from . import config
 from .exceptions import UniqueProperty, ConstraintValidationFailed, ModelDefinitionMismatch
@@ -79,6 +80,7 @@ class Database(local, NodeClassRegistry):
         self.url = None
         self.driver = None
         self._pid = None
+        self.database = None
 
     def set_connection(self, url):
         """
@@ -93,10 +95,11 @@ class Database(local, NodeClassRegistry):
             raise ValueError("Expecting url format: bolt://user:password@localhost:7687"
                              " got {0}".format(url))
 
+        self.database = config.DATABASE_NAME
         self.driver = GraphDatabase.driver(u.scheme + '://' + hostname,
                                            auth=basic_auth(username, password),
                                            encrypted=config.ENCRYPTED_CONNECTION,
-                                           max_pool_size=config.MAX_POOL_SIZE)
+                                           max_connection_pool_size=config.MAX_POOL_SIZE)
         self.url = url
         self._pid = os.getpid()
         self._active_transaction = None
@@ -123,7 +126,8 @@ class Database(local, NodeClassRegistry):
         """
         if self._active_transaction:
             raise SystemError("Transaction in progress")
-        self._active_transaction = self.driver.session(access_mode=access_mode).begin_transaction()
+        session = self.driver.session(database=self.database, default_access_mode=access_mode)
+        self._active_transaction = session.begin_transaction()
 
     @ensure_connection
     def commit(self):
@@ -207,7 +211,7 @@ class Database(local, NodeClassRegistry):
         if self._active_transaction:
             session = self._active_transaction
         else:
-            session = self.driver.session()
+            session = self.driver.session(database=self.database)
 
         try:
             # Retrieve the data
@@ -220,7 +224,7 @@ class Database(local, NodeClassRegistry):
                 # Do any automatic resolution required
                 results = self._object_resolution(results)
                 
-        except CypherError as ce:
+        except Neo4jError as ce:
             if ce.code == u'Neo.ClientError.Schema.ConstraintValidationFailed':
                 if 'already exists with label' in ce.message and handle_unique:
                     raise UniqueProperty(ce.message)
@@ -232,7 +236,7 @@ class Database(local, NodeClassRegistry):
                     raise exc_info[1].with_traceback(exc_info[2])
                 else:
                     raise exc_info[1]
-        except SessionError:
+        except SessionExpired:
             if retry_on_session_expire:
                 self.set_connection(self.url)
                 return self.cypher_query(query=query,
@@ -261,7 +265,7 @@ class TransactionProxy(object):
         if exc_value:
             self.db.rollback()
 
-        if exc_type is CypherError:
+        if exc_type is Neo4jError:
             if exc_value.code == u'Neo.ClientError.Schema.ConstraintValidationFailed':
                 raise UniqueProperty(exc_value.message)
                 
