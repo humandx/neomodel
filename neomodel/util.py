@@ -94,7 +94,7 @@ class Database(local, NodeClassRegistry):
             raise ValueError("Expecting url format: bolt://user:password@localhost:7687"
                              " got {0}".format(url))
 
-        self.database = config.DATABASE_URL
+        self.database = config.DATABASE_NAME
         self.driver = GraphDatabase.driver(u.scheme + '://' + hostname,
                                            auth=basic_auth(username, password),
                                            encrypted=config.ENCRYPTED_CONNECTION,
