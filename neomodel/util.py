@@ -6,7 +6,8 @@ import warnings
 from neomodel import core
 from threading import local
 
-from neo4j import GraphDatabase, basic_auth, Neo4jError, SessionError
+from neo4j import GraphDatabase, basic_auth, SessionError
+from neo4j.exceptions import Neo4jError
 from neo4j.types.graph import Node
 
 from . import config

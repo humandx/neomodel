@@ -1,5 +1,5 @@
 from neomodel import StructuredNode, StringProperty
-from neo4j import Neo4jError
+from neo4j.exceptions import Neo4jError
 
 
 class User2(StructuredNode):

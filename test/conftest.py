@@ -4,7 +4,7 @@ import os
 import sys
 
 from neomodel import config, db, clear_neo4j_database, change_neo4j_password
-from neo4j import Neo4jError
+from neo4j.exceptions import Neo4jError
 from neobolt.exceptions import ClientError
 
 
