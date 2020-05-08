@@ -6,7 +6,7 @@ import warnings
 from neomodel import core
 from threading import local
 
-from neo4j import GraphDatabase, basic_auth, CypherError, SessionError
+from neo4j import GraphDatabase, basic_auth, Neo4jError, SessionError
 from neo4j.types.graph import Node
 
 from . import config
@@ -228,7 +228,7 @@ class Database(local, NodeClassRegistry):
                 # Do any automatic resolution required
                 results = self._object_resolution(results)
                 
-        except CypherError as ce:
+        except Neo4jError as ce:
             if ce.code == u'Neo.ClientError.Schema.ConstraintValidationFailed':
                 if 'already exists with label' in ce.message and handle_unique:
                     raise UniqueProperty(ce.message)
@@ -269,7 +269,7 @@ class TransactionProxy(object):
         if exc_value:
             self.db.rollback()
 
-        if exc_type is CypherError:
+        if exc_type is Neo4jError:
             if exc_value.code == u'Neo.ClientError.Schema.ConstraintValidationFailed':
                 raise UniqueProperty(exc_value.message)
                 
