@@ -6,8 +6,8 @@ import warnings
 from neomodel import core
 from threading import local
 
-from neo4j import GraphDatabase, basic_auth, SessionError
-from neo4j.exceptions import Neo4jError
+from neo4j import GraphDatabase, basic_auth
+from neo4j.exceptions import Neo4jError, SessionExpired
 from neo4j.types.graph import Node
 
 from . import config
@@ -241,7 +241,7 @@ class Database(local, NodeClassRegistry):
                     raise exc_info[1].with_traceback(exc_info[2])
                 else:
                     raise exc_info[1]
-        except SessionError:
+        except SessionExpired:
             if retry_on_session_expire:
                 self.set_connection(self.url)
                 return self.cypher_query(query=query,
