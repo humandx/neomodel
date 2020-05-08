@@ -3,3 +3,4 @@ DATABASE_URL = 'bolt://neo4j:neo4j@localhost:7687'
 FORCE_TIMEZONE = False
 ENCRYPTED_CONNECTION = False
 MAX_POOL_SIZE = 50
+DATABASE_NAME = None

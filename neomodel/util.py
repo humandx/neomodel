@@ -79,6 +79,7 @@ class Database(local, NodeClassRegistry):
         self.url = None
         self.driver = None
         self._pid = None
+        self.database = None
 
     def set_connection(self, url):
         """
@@ -93,6 +94,7 @@ class Database(local, NodeClassRegistry):
             raise ValueError("Expecting url format: bolt://user:password@localhost:7687"
                              " got {0}".format(url))
 
+        self.database = config.DATABASE_URL
         self.driver = GraphDatabase.driver(u.scheme + '://' + hostname,
                                            auth=basic_auth(username, password),
                                            encrypted=config.ENCRYPTED_CONNECTION,
@@ -123,7 +125,11 @@ class Database(local, NodeClassRegistry):
         """
         if self._active_transaction:
             raise SystemError("Transaction in progress")
-        self._active_transaction = self.driver.session(access_mode=access_mode).begin_transaction()
+        if self.database:
+            session = self.driver.session(database=self.database, access_mode=access_mode)
+        else:
+            session = self.driver.session(access_mode=access_mode)
+        self._active_transaction = session.begin_transaction()
 
     @ensure_connection
     def commit(self):
@@ -206,6 +212,8 @@ class Database(local, NodeClassRegistry):
 
         if self._active_transaction:
             session = self._active_transaction
+        elif self.database:
+            session = self.driver.session(database=self.database)
         else:
             session = self.driver.session()
 
