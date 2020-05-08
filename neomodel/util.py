@@ -126,10 +126,7 @@ class Database(local, NodeClassRegistry):
         """
         if self._active_transaction:
             raise SystemError("Transaction in progress")
-        if self.database:
-            session = self.driver.session(database=self.database, default_access_mode=access_mode)
-        else:
-            session = self.driver.session(default_access_mode=access_mode)
+        session = self.driver.session(database=self.database, default_access_mode=access_mode)
         self._active_transaction = session.begin_transaction()
 
     @ensure_connection
@@ -213,10 +210,8 @@ class Database(local, NodeClassRegistry):
 
         if self._active_transaction:
             session = self._active_transaction
-        elif self.database:
-            session = self.driver.session(database=self.database)
         else:
-            session = self.driver.session()
+            session = self.driver.session(database=self.database)
 
         try:
             # Retrieve the data
